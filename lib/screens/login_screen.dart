@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rive/rive.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/app_routes.dart';
 
@@ -28,17 +27,6 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     initRive();
-    checkLogin();
-  }
-
-  // CHECK IF ALREADY LOGGED IN
-  void checkLogin() async {
-    final prefs = await SharedPreferences.getInstance();
-    bool isLoggedIn = prefs.getBool("isLoggedIn") ?? false;
-
-    if (isLoggedIn && mounted) {
-      Navigator.pushReplacementNamed(context, AppRoutes.notesList);
-    }
   }
 
   // LOAD RIVE
@@ -83,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // ANIMATION
+  // ANIMATIONS
   void lookAround() {
     isChecking?.change(true);
     isHandsUp?.change(false);
@@ -99,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
     isChecking?.change(false);
   }
 
-  //  LOGIN FUNCTION (DYNAMIC )
+  // LOGIN FUNCTION
   void loginClick() async {
     isChecking?.change(false);
     isHandsUp?.change(false);
@@ -110,17 +98,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Enter all fields ❗")));
+      ).showSnackBar(const SnackBar(content: Text("Enter all fields ")));
       return;
     }
 
-    // SUCCESS LOGIN
+    // SUCCESS
     successTrigger?.fire();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("isLoggedIn", true);
-
-    // Navigate
+    // Navigate after animation
     Future.delayed(const Duration(milliseconds: 800), () {
       if (mounted) {
         Navigator.pushReplacementNamed(context, AppRoutes.notesList);
@@ -138,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              //  RIVE
+              // RIVE ANIMATION
               artboard != null
                   ? SizedBox(
                       width: 400,
@@ -149,7 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-              // EMAIL
+              // EMAIL FIELD
               Padding(
                 padding: const EdgeInsets.all(15),
                 child: Container(
@@ -175,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              // PASSWORD
+              // PASSWORD FIELD
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: Container(
@@ -204,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 10),
 
-              // LOGIN
+              // LOGIN BUTTON
               Container(
                 height: 50,
                 width: 250,
