@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       initialRoute: AppRoutes.login,
-      routes: AppRoutes.routes,
+      routes: AppRoutes.routes, //  IMPORTANT
     );
   }
 }

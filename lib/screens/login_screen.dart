@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rive/rive.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../constants/app_routes.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -14,53 +16,64 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passController = TextEditingController();
 
-  var animationLink = 'assets/login-bear.riv';
+  final String animationLink = 'assets/login-bear.riv';
 
   SMITrigger? failTrigger, successTrigger;
   SMIBool? isHandsUp, isChecking;
   SMINumber? lookNum;
-  StateMachineController? stateMachineController;
+  StateMachineController? controller;
   Artboard? artboard;
 
   @override
   void initState() {
     super.initState();
+    initRive();
+    checkLogin();
+  }
 
-    rootBundle.load(animationLink).then((value) {
-      final file = RiveFile.import(value);
-      final art = file.mainArtboard;
+  // CHECK IF ALREADY LOGGED IN
+  void checkLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool isLoggedIn = prefs.getBool("isLoggedIn") ?? false;
 
-      stateMachineController = StateMachineController.fromArtboard(
-        art,
-        "Login Machine",
-      );
+    if (isLoggedIn && mounted) {
+      Navigator.pushReplacementNamed(context, AppRoutes.notesList);
+    }
+  }
 
-      if (stateMachineController != null) {
-        art.addController(stateMachineController!);
+  // LOAD RIVE
+  void initRive() async {
+    final data = await rootBundle.load(animationLink);
+    final file = RiveFile.import(data);
+    final art = file.mainArtboard;
 
-        for (var element in stateMachineController!.inputs) {
-          switch (element.name) {
-            case "isChecking":
-              isChecking = element as SMIBool;
-              break;
-            case "isHandsUp":
-              isHandsUp = element as SMIBool;
-              break;
-            case "trigSuccess":
-              successTrigger = element as SMITrigger;
-              break;
-            case "trigFail":
-              failTrigger = element as SMITrigger;
-              break;
-            case "numLook":
-              lookNum = element as SMINumber;
-              break;
-          }
+    controller = StateMachineController.fromArtboard(art, "Login Machine");
+
+    if (controller != null) {
+      art.addController(controller!);
+
+      for (var input in controller!.inputs) {
+        switch (input.name) {
+          case "isChecking":
+            isChecking = input as SMIBool;
+            break;
+          case "isHandsUp":
+            isHandsUp = input as SMIBool;
+            break;
+          case "trigSuccess":
+            successTrigger = input as SMITrigger;
+            break;
+          case "trigFail":
+            failTrigger = input as SMITrigger;
+            break;
+          case "numLook":
+            lookNum = input as SMINumber;
+            break;
         }
       }
+    }
 
-      setState(() => artboard = art);
-    });
+    if (mounted) setState(() => artboard = art);
   }
 
   @override
@@ -70,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Animation Controls
+  // ANIMATION
   void lookAround() {
     isChecking?.change(true);
     isHandsUp?.change(false);
@@ -86,29 +99,38 @@ class _LoginScreenState extends State<LoginScreen> {
     isChecking?.change(false);
   }
 
-  // LOGIN LOGIC + ROUTING
-  void loginClick() {
+  //  LOGIN FUNCTION (DYNAMIC )
+  void loginClick() async {
     isChecking?.change(false);
     isHandsUp?.change(false);
 
-    if (emailController.text == "email" && passController.text == "pass") {
-      successTrigger?.fire();
-
-      // Navigate after slight delay (so animation plays)
-      Future.delayed(const Duration(milliseconds: 800), () {
-        Navigator.pushReplacementNamed(context, AppRoutes.notesList);
-      });
-    } else {
+    // Validation
+    if (emailController.text.isEmpty || passController.text.isEmpty) {
       failTrigger?.fire();
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Enter all fields ❗")));
+      return;
     }
 
-    setState(() {});
+    // SUCCESS LOGIN
+    successTrigger?.fire();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("isLoggedIn", true);
+
+    // Navigate
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRoutes.notesList);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.black87,
       body: SingleChildScrollView(
         child: SizedBox(
@@ -116,17 +138,20 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // RIVE ANIMATION
-              if (artboard != null)
-                SizedBox(
-                  width: 400,
-                  height: 250,
-                  child: Rive(artboard: artboard!),
-                ),
+              //  RIVE
+              artboard != null
+                  ? SizedBox(
+                      width: 400,
+                      height: 250,
+                      child: Rive(artboard: artboard!),
+                    )
+                  : const CircularProgressIndicator(),
 
-              // EMAIL FIELD
+              const SizedBox(height: 20),
+
+              // EMAIL
               Padding(
-                padding: const EdgeInsets.all(15.0),
+                padding: const EdgeInsets.all(15),
                 child: Container(
                   height: 70,
                   width: 350,
@@ -150,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              // PASSWORD FIELD
+              // PASSWORD
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: Container(
@@ -177,18 +202,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              // SIGNUP
-              TextButton(
-                onPressed: () {},
-                child: const Text(
-                  'Not having account? Sign up!',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-
               const SizedBox(height: 10),
 
-              // LOGIN BUTTON
+              // LOGIN
               Container(
                 height: 50,
                 width: 250,
