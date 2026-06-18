@@ -89,6 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // LOGIN FUNCTION
   void loginClick() async {
+    FocusScope.of(context).unfocus();
     isChecking?.change(false);
     isHandsUp?.change(false);
 
