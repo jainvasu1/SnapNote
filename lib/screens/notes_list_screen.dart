@@ -13,6 +13,14 @@ class NotesListScreen extends StatefulWidget {
 }
 
 class _NotesListScreenState extends State<NotesListScreen> {
+  late List<Note> notes;
+
+  @override
+  void initState() {
+    super.initState();
+    notes = StorageService.getNotes();
+  }
+
   Color getPriorityColor(String priority) {
     switch (priority) {
       case "High":
@@ -24,7 +32,6 @@ class _NotesListScreenState extends State<NotesListScreen> {
     }
   }
 
-  // DELETE CONFIRM DIALOG
   Future<bool?> confirmDelete() {
     return showDialog(
       context: context,
@@ -45,25 +52,20 @@ class _NotesListScreenState extends State<NotesListScreen> {
     );
   }
 
+  void refreshNotes() {
+    setState(() {
+      notes = StorageService.getNotes();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    List<Note> notes = StorageService.getNotes();
-
     return Scaffold(
       backgroundColor: Colors.black,
 
       appBar: AppBar(
         backgroundColor: Colors.black,
-        elevation: 0,
-        title: const Text(
-          "Notes",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-
+        title: const Text("Notes", style: TextStyle(color: Colors.white)),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -81,7 +83,7 @@ class _NotesListScreenState extends State<NotesListScreen> {
           ? const Center(
               child: Text(
                 "No Notes Found",
-                style: TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(color: Colors.white),
               ),
             )
           : ListView.builder(
@@ -90,54 +92,44 @@ class _NotesListScreenState extends State<NotesListScreen> {
                 final note = notes[index];
 
                 return Dismissible(
-                  key: Key(note.title + index.toString()),
+                  key: Key(note.id.toString()),
 
-                  // 👉 EDIT (LEFT SWIPE)
+                  // EDIT (LEFT)
                   background: Container(
                     color: Colors.blue,
                     alignment: Alignment.centerLeft,
                     padding: const EdgeInsets.only(left: 20),
-                    child: const Icon(
-                      Icons.edit,
-                      color: Colors.white,
-                      size: 30,
-                    ),
+                    child: const Icon(Icons.edit, color: Colors.white),
                   ),
 
-                  // DELETE (RIGHT SWIPE)
+                  // DELETE (RIGHT)
                   secondaryBackground: Container(
                     color: Colors.red,
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.only(right: 20),
-                    child: const Icon(
-                      Icons.delete,
-                      color: Colors.white,
-                      size: 30,
-                    ),
+                    child: const Icon(Icons.delete, color: Colors.white),
                   ),
 
                   confirmDismiss: (direction) async {
                     if (direction == DismissDirection.endToStart) {
                       return await confirmDelete();
                     } else {
-                      // EDIT NAVIGATION
                       Navigator.pushNamed(
                         context,
                         AppRoutes.detail,
                         arguments: note,
-                      ).then((_) {
-                        setState(() {});
-                      });
+                      ).then((_) => refreshNotes());
+
                       return false;
                     }
                   },
 
                   onDismissed: (direction) {
                     if (direction == DismissDirection.endToStart) {
-                      setState(() {
-                        notes.removeAt(index);
-                        StorageService.saveNotes(notes);
-                      });
+                      notes.removeAt(index);
+                      StorageService.saveNotes(notes);
+
+                      setState(() {});
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("Note Deleted")),
@@ -147,10 +139,6 @@ class _NotesListScreenState extends State<NotesListScreen> {
 
                   child: Card(
                     color: Colors.black54,
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: getPriorityColor(note.priority),
@@ -158,18 +146,12 @@ class _NotesListScreenState extends State<NotesListScreen> {
 
                       title: Text(
                         note.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
+                        style: const TextStyle(color: Colors.white),
                       ),
 
                       subtitle: Text(
                         note.date,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 13,
-                        ),
+                        style: const TextStyle(color: Colors.grey),
                       ),
 
                       onTap: () {
@@ -177,10 +159,9 @@ class _NotesListScreenState extends State<NotesListScreen> {
                           context,
                           AppRoutes.detail,
                           arguments: note,
-                        );
+                        ).then((_) => refreshNotes());
                       },
 
-                      //  ICON BUTTONS ALSO
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -191,20 +172,19 @@ class _NotesListScreenState extends State<NotesListScreen> {
                                 context,
                                 AppRoutes.detail,
                                 arguments: note,
-                              ).then((_) {
-                                setState(() {});
-                              });
+                              ).then((_) => refreshNotes());
                             },
                           ),
+
                           IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
                             onPressed: () async {
                               bool? confirm = await confirmDelete();
                               if (confirm == true) {
-                                setState(() {
-                                  notes.removeAt(index);
-                                  StorageService.saveNotes(notes);
-                                });
+                                notes.removeAt(index);
+                                StorageService.saveNotes(notes);
+
+                                setState(() {});
                               }
                             },
                           ),
@@ -219,9 +199,10 @@ class _NotesListScreenState extends State<NotesListScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.white,
         onPressed: () {
-          Navigator.pushNamed(context, AppRoutes.addNote).then((_) {
-            setState(() {});
-          });
+          Navigator.pushNamed(
+            context,
+            AppRoutes.addNote,
+          ).then((_) => refreshNotes());
         },
         child: const Icon(Icons.add, color: Colors.black),
       ),

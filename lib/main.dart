@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'constants/app_routes.dart';
+import 'screens/splash_screen.dart';
 
 void main() {
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
   runApp(const MyApp());
 }
 
@@ -29,6 +36,8 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       initialRoute = isLoggedIn ? AppRoutes.notesList : AppRoutes.login;
     });
+
+    FlutterNativeSplash.remove();
   }
 
   @override
