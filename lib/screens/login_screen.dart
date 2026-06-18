@@ -109,7 +109,36 @@ class _LoginScreenState extends State<LoginScreen> {
     // Navigate after animation
     Future.delayed(const Duration(milliseconds: 800), () {
       if (mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.notesList);
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text("Login Successful"),
+              content: const Text("Where do you want to go?"),
+
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Back"),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+
+                    Navigator.pushReplacementNamed(
+                      context,
+                      AppRoutes.notesList,
+                    );
+                  },
+
+                  child: const Text("Home Page"),
+                ),
+              ],
+            );
+          },
+        );
       }
     });
   }

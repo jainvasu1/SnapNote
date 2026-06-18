@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/note.dart';
+import '../services/storage_service.dart';
 
 class NotesDetailScreen extends StatefulWidget {
   const NotesDetailScreen({super.key});
@@ -12,6 +13,7 @@ class _NotesDetailScreenState extends State<NotesDetailScreen> {
   late TextEditingController titleController;
   late TextEditingController contentController;
   late Note note;
+
   String priority = "Low";
   bool _initialized = false;
 
@@ -22,17 +24,12 @@ class _NotesDetailScreenState extends State<NotesDetailScreen> {
     if (_initialized) return;
 
     note = ModalRoute.of(context)!.settings.arguments as Note;
+
     titleController = TextEditingController(text: note.title);
     contentController = TextEditingController(text: note.content);
     priority = note.priority;
-    _initialized = true;
-  }
 
-  @override
-  void dispose() {
-    titleController.dispose();
-    contentController.dispose();
-    super.dispose();
+    _initialized = true;
   }
 
   void _saveNote() {
@@ -43,6 +40,13 @@ class _NotesDetailScreenState extends State<NotesDetailScreen> {
       date: note.date,
       priority: priority,
     );
+    List<Note> notes = StorageService.getNotes();
+    int index = notes.indexWhere((n) => n.id == note.id);
+
+    if (index != -1) {
+      notes[index] = updatedNote;
+      StorageService.saveNotes(notes);
+    }
 
     Navigator.pop(context, updatedNote);
   }
@@ -66,20 +70,20 @@ class _NotesDetailScreenState extends State<NotesDetailScreen> {
   }
 
   @override
+  void dispose() {
+    titleController.dispose();
+    contentController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+
       appBar: AppBar(
-        title: const Text(
-          "Edit Note",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
         backgroundColor: Colors.black,
-        elevation: 0,
+        title: const Text("Edit Note", style: TextStyle(color: Colors.white)),
         actions: [
           IconButton(
             icon: const Icon(Icons.save, color: Colors.white),
@@ -87,28 +91,28 @@ class _NotesDetailScreenState extends State<NotesDetailScreen> {
           ),
         ],
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // TITLE
             TextField(
               controller: titleController,
               style: const TextStyle(color: Colors.white),
               decoration: _inputDecoration("Title"),
             ),
+
             const SizedBox(height: 12),
 
-            // CONTENT
             TextField(
               controller: contentController,
               maxLines: 5,
               style: const TextStyle(color: Colors.white),
               decoration: _inputDecoration("Description"),
             ),
+
             const SizedBox(height: 12),
 
-            // PRIORITY
             DropdownButtonFormField<String>(
               value: priority,
               dropdownColor: Colors.grey[900],
